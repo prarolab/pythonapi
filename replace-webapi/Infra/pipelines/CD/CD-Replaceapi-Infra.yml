@@ -20,9 +20,9 @@ stages:
   - template: /replace-webapi/Infra/pipelines/CD/CD-Infra-template.yml
     parameters:
         vmImageName: 'windows-latest'
-        rgNumber: 01
-        iterationNumber: 001
-        environmentString: Prod
+        # rgNumber: 01
+        # iterationNumber: 001
+        # environmentString: Prod
         deploymentMode: Incremental
         applicationString: ReplaceC
         departmentString: NC
