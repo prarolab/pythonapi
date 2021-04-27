@@ -17,7 +17,7 @@ trigger:
 
 variables:
   vmImageName: 'ubuntu-latest'
-  workingDirectoryMiddle: '$(System.DefaultWorkingDirectory)/replacewebapi/appcode/'
+  workingDirectoryMiddle: '$(System.DefaultWorkingDirectory)/replace-webapi/appcode/'
   libpath: '$(System.DefaultWorkingDirectory)/code/development/lib/'
 
 stages:
