@@ -44,7 +44,8 @@
         }
     },
     "variables": {
-        "settingName":  "HostingPlan-LOGS-LOGANALYTICS"
+        "settingName":  "HostingPlan-LOGS-LOGANALYTICS",
+        "webAppName": "[concat(parameters('hostingPlanName'),'webapi01')]"
     },
     "resources": [
   
@@ -73,6 +74,27 @@
                 "targetWorkerSizeId": 0
             }
         },
+        {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('webAppName')]",
+      "location": "[parameters('location')]",
+
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+        "siteConfig": {
+          "linuxFxVersion": "PYTHON|3.7"
+        }
+      }
+      
+    },
+
+
+
+
           {
         "type": "Microsoft.Web/serverfarms/providers/diagnosticSettings",
         "apiVersion": "2017-05-01-preview",
