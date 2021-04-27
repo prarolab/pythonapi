@@ -1,0 +1,58 @@
+# Python WebApp to Linux on Azure
+# Build a Python function app and deploy it to Azure as a Linux Web api.
+
+
+# CI trigger
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - replace-webapi/Infra/pipelines/CI/CI-replace-webapi.yml
+    - replace-webapi/Infra/pipelines/CD/CD-replace-webapi.yml
+    - replace-webapi/appcode/*
+    exclude:
+    - replace-webapi/*
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  workingDirectoryMiddle: '$(System.DefaultWorkingDirectory)/replacewebapi/appcode/'
+  libpath: '$(System.DefaultWorkingDirectory)/code/development/lib/'
+
+stages:
+- stage: Build
+  displayName: Build Stage
+
+  jobs:
+  - job: Build_And_Publish
+    displayName: Build Both Functions and Publish
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    
+
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.7'
+      inputs:
+        versionSpec: 3.7
+    - script: |
+         python -m venv antenv
+         source antenv/bin/activate
+         python -m pip install --upgrade pip
+         pip install setup
+         pip install -r requirements.txt
+      workingDirectory: $(workingDirectoryMiddle)
+      displayName: "Install requirements" 
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/Application$(Build.BuildId).zip'
+        replaceExistingArchive: true
+        verbose: # (no value); this input is optional
+    - publish: $(Build.ArtifactStagingDirectory)/Application$(Build.BuildId).zip
+      displayName: 'Upload package'
+      artifact: drop
