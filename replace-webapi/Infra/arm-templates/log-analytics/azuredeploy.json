@@ -1,0 +1,134 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "workspaceName": {
+          "type": "string",
+          "metadata": {
+            "description": "Name of the workspace."
+          }
+      },
+      "environment": {
+            "type": "string",
+            "defaultValue": "Dev",
+            "metadata": {
+                "description": "Specify the environment where the azure resource will be provisioned."
+            }
+        },
+        "resourceTags": {
+            "type": "object",
+            "defaultValue": {
+                "Cost Center": "replace123",
+                "Environment": "[parameters('environment')]",
+                "Region": "[parameters('location')]",
+                "Application": "xyz",
+                "Application Owner": "TBD",
+                "Requestor": "abc",
+                "RequestedDate": "[utcNow('d')]"
+            }
+        },
+      "sku": {
+          "type": "string",
+          "allowedValues": [
+            "pergb2018",
+            "Free",
+            "Standalone",
+            "PerNode",
+            "Standard",
+            "Premium"
+            ],
+          "defaultValue": "pergb2018",
+          "metadata": {
+          "description": "Pricing tier: PerGB2018 or legacy tiers (Free, Standalone, PerNode, Standard or Premium) which are not available to all customers."
+          }
+        },
+        "location": {
+          "type": "string",
+          "defaultValue": "[resourceGroup().location]",
+          "metadata": {
+              "description": "Specifies the location for the workspace."
+              }
+        },
+        "retentionInDays": {
+          "type": "int",
+          "defaultValue": 120,
+          "metadata": {
+            "description": "Number of days to retain data."
+          }
+        },
+        "resourcePermissions": {
+          "type": "bool",
+          "metadata": {
+            "description": "true to use resource or workspace permissions. false to require workspace permissions."
+          }
+      }
+
+      },
+       "variables": {
+        "settingName":  "LA-LOGS-LOGANALYTICS"
+    },
+      "resources": [
+         {
+            "apiVersion": "2020-06-01",
+            "name": "pid-a79fe048-6869-45ac-8683-7fd2446fc73c",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "resources": []
+                }
+            }
+        },
+       
+      {
+          "type": "Microsoft.OperationalInsights/workspaces",
+          "name": "[parameters('workspaceName')]",
+          "apiVersion": "2020-08-01",
+          "location": "[parameters('location')]",
+          "tags": "[parameters('resourceTags')]",
+          "properties": {
+              "sku": {
+                  "name": "[parameters('sku')]"
+              },
+              "retentionInDays": "[parameters('retentionInDays')]",
+              "features": {
+                  "searchVersion": 1,
+                  "legacy": 0,
+                  "enableLogAccessUsingOnlyResourcePermissions": "[parameters('resourcePermissions')]"
+              }
+          }
+      },
+        {
+        "type": "Microsoft.OperationalInsights/workspaces/providers/diagnosticSettings",
+        "apiVersion": "2017-05-01-preview",
+        "name": "[concat(parameters('workspaceName'), '/Microsoft.Insights/', variables('settingName'))]",
+        "dependsOn":[ 
+             "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+        ],
+        "properties": {
+            "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+        "logs": [
+            {
+            "category": "Audit",
+            "enabled": true
+            }
+            
+         ],
+        "metrics": [
+            {
+            "category": "AllMetrics",
+            "enabled": true
+            }
+        ]   
+        }
+        }
+  ],
+   "outputs": {
+  "resourceID": {
+    "type": "string",
+    "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+  }
+   }
+}
