@@ -1,0 +1,28 @@
+#####################################################################################################
+# Created Date : 20-04-2021
+# Description : This is a CD infrastructure deployment pipeline.
+# This pipeline will be triggered once the CI-Replace-Infra pipeline is completed
+# This pipeline will deploy the resources in DEV and TEST environment based on the condition defined 
+# in each environment stage.
+#####################################################################################################
+
+trigger: none
+pr: none
+variables:
+ - group: replace-vg
+stages:
+        
+- stage: "Infra_Setup"
+  displayName: Infra_Setup
+  jobs:
+  - deployment: DeployInfrastructure
+    environment: $(environment)
+  - template: /replace-webapi/Infra/pipelines/CD/CD-Infra-template.yml
+    parameters:
+        vmImageName: 'windows-latest'
+        rgNumber: 01
+        iterationNumber: 001
+        environmentString: Prod
+        deploymentMode: Incremental
+        applicationString: ReplaceC
+        departmentString: NC

@@ -1,0 +1,116 @@
+parameters:
+  - name: 'vmImageName'
+    type: string
+    default: ''
+  - name: 'applicationString'
+    type: string
+    default: ''
+  - name: 'departmentString'
+    type: string
+    default: ''
+  - name: 'deploymentMode'
+    type: string
+    default: ''
+  
+jobs:
+  - job:
+    displayName: 'Setup Infrastructure'
+    variables:
+      - name: rgPostFix
+        value: ${{ parameters.applicationString }}-$(environmentString)-$(rgNumber)
+      - name: generalPostFix
+        value: ${{ parameters.applicationString }}-$(environmentString)-$(iterationNumber)
+      - name: resourceGroupName
+        value: 'RG-$(rgPostFix)'
+      - name: location
+        value: 'northcentralus'
+      - name: date
+        value: '23/04/2021'
+      - name: logAnalyticsWorkspaceName
+        value: 'LOG-$(generalPostFix)'
+     
+
+      - name: hostingPlanName
+        value: 'HP-$(generalPostFix)'
+      - name: functionAppNameMidLayer
+        value: 'FA-$(generalPostFix)-mid-layer'
+      # Resource ID
+      - name: baseResourcePath
+        value: '/subscriptions/$(subscriptionId)/resourceGroups/$(resourceGroupName)/providers'
+
+      - name: hpPath
+        value: '$(baseResourcePath)/Microsoft.Web/serverfarms/$(hostingPlanName)'
+
+      - name: workingDirectoryMiddle
+        value: '$(System.DefaultWorkingDirectory)/replace-webapi/Infra/arm-templates/'
+      - name: workingDirectoryTemplates
+        value: '$(System.DefaultWorkingDirectory)/replace-webapi/Infra/arm-templates/'
+      - name: resourceTags
+        value: '{ "Cost Center": "XyZ","Environment": "$(environmentString)","Region": "$(location)","Application": "ReplaceLabel","Application Owner": "TBD","Requestor": "abc","RequestedDate": "$(Date)"}'
+            
+    pool:
+      vmImage: ${{ parameters.vmImageName }}      
+
+    steps:
+      # - task: DownloadBuildArtifacts@0
+      #   displayName: 'Download Build Artifacts'
+      #   inputs:
+      #     buildType: specific
+      #     project: 'a9125d7b-9448-4ea4-a993-0a8e61ff18eb'
+      #     pipeline: ${{parameters.pipelineNo}}
+      #     specificBuildWithTriggering: true
+      #     buildVersionToDownload: 'latest'
+      #     artifactName: 'ARM-TEMPLATES'
+      #     downloadPath: '$(System.ArtifactsDirectory)' 
+
+      - task: UsePythonVersion@0
+        displayName: ' Use Python 3.6'
+        inputs:
+          versionSpec: 3.6 # Functions V2 supports Python 3.6 as of today  
+       
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Create Log Analytics workspace
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: "$(AZURE_SVC_CONNECTION)"
+          subscriptionId: '$(subscriptionId)'
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: '$(resourceGroupName)'
+          location: '$(location)'
+          templateLocation: 'Linked artifact'
+          csmFile: '$(workingDirectoryTemplates)/log-analytics/azuredeploy.json'
+          csmParametersFile: '$(workingDirectoryTemplates)/log-analytics/azuredeploy.parameters.json'
+          overrideParameters: '-workspaceName $(logAnalyticsWorkspaceName)  -environment $(environmentString) -resourceTags $(resourceTags) -location $(location)'
+          deploymentMode: ${{ parameters.deploymentMode }}
+          deploymentOutputs: laworkspaceid
+      
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Create Hosting Plan
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: "$(AZURE_SVC_CONNECTION)"
+          subscriptionId: '$(subscriptionId)'
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: '$(resourceGroupName)'
+          location: '$(location)'
+          templateLocation: 'Linked artifact'
+          csmFile: '$(workingDirectoryTemplates)/hosting-plan/azuredeploy.json'
+          csmParametersFile: '$(workingDirectoryTemplates)/hosting-plan/azuredeploy.parameters.json'
+          overrideParameters: '-hostingPlanName $(hostingPlanName) -environment $(environmentString) -resourceTags $(resourceTags) -location $(location) -workspaceid $(laworkspaceid.resourceID.value)'
+          deploymentMode: ${{ parameters.deploymentMode }}
+      
+      # - task: AzureResourceManagerTemplateDeployment@3
+      #   condition: eq(variables.runtask, true)
+      #   displayName: Create Forward Function-ML Models
+      #   inputs:
+      #     deploymentScope: 'Resource Group'
+      #     azureResourceManagerConnection: "$(AZURE_SVC_CONNECTION)"
+      #     subscriptionId: '$(subscriptionId)'
+      #     action: 'Create Or Update Resource Group'
+      #     resourceGroupName: '$(resourceGroupName)'
+      #     location: '$(location)'
+      #     templateLocation: 'Linked artifact'
+      #     csmFile: '$(workingDirectoryTemplates)/azure-function/azuredeploy.json'
+      #     csmParametersFile: '$(workingDirectoryTemplates)/azure-function/azuredeploy.parameters.json'
+      #     overrideParameters: '-functionAppName $(functionAppNameMlModels) -hostingPlanName $(hpPath) -environment $(environmentString)  -appInsightsName $(appInsightsName) -resourceTags $(resourceTags) -location $(location) -storageAccountName $(storageAccountName) -workspaceid $(laworkspaceid.resourceID.value)'
+      #     deploymentMode: ${{ parameters.deploymentMode }}
