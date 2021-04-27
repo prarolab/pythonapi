@@ -44,7 +44,7 @@ jobs:
       - name: workingDirectoryMiddle
         value: '$(System.DefaultWorkingDirectory)/replace-webapi/Infra/arm-templates/'
       - name: workingDirectoryTemplates
-        value: '$(System.DefaultWorkingDirectory)/replace-webapi/Infra/arm-templates/'
+        value: '$(System.DefaultWorkingDirectory)/replace-webapi/Infra/arm-templates'
       - name: resourceTags
         value: '{ "Cost Center": "XyZ","Environment": "$(environmentString)","Region": "$(location)","Application": "ReplaceLabel","Application Owner": "TBD","Requestor": "abc","RequestedDate": "$(Date)"}'
             
